@@ -4,12 +4,15 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 
 function onshutdown {
-    /opt/hadoop/sbin/hadoop-daemon.sh stop datanode
-    /opt/hadoop/sbin/hadoop-daemon.sh stop namenode
+    hdfs --daemon stop datanode
+    hdfs --daemon stop namenode
 }
 
-trap onshutdown SIGTERM
-trap onshutdown SIGINT
+trap onshutdown SIGTERM SIGINT
+
+function log() {
+    echo -e "${@}" >&2
+}
 
 # Hadoop shell scripts assume USER is defined
 export USER="${USER:-$(whoami)}"
@@ -17,12 +20,20 @@ export USER="${USER:-$(whoami)}"
 # allow HDFS access from outside the container
 sed -i s/localhost/${HOSTNAME}/ /opt/hadoop/etc/hadoop/core-site.xml
 
- /opt/hadoop/bin/hadoop namenode -format -force
-/opt/hadoop/sbin/hadoop-daemon.sh start namenode
-/opt/hadoop/sbin/hadoop-daemon.sh start datanode
-timeout 10 bash -c -- '/opt/hadoop/bin/hdfs dfsadmin -safemode wait' || \
-    /opt/hadoop/bin/hdfs dfsadmin -safemode leave
+log "Formatting namenode..."
+hdfs namenode -format -force
 
-tail -f /dev/null
+log "Starting namenode"
+hdfs --daemon start namenode
+
+sleep 30
+log "Starting datanode"
+hdfs --daemon start datanode
+
+log "Waiting for hdfs to come out of safe mode"
+timeout 30 bash -c -- 'hdfs dfsadmin -safemode wait' || \
+    hdfs dfsadmin -safemode leave
+
+tail -f /opt/hadoop/logs/hadoop-${USER}-{datanode,namenode}-${HOSTNAME}.log
 
 onshutdown

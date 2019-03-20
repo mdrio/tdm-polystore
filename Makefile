@@ -4,7 +4,8 @@ IMAGE=timescale/timescaledb-postgis
 
 images:
 	docker build -f docker/Dockerfile.hdfs -t tdm/hdfs docker
-	docker build -f docker/Dockerfile.tiledb -t tdm/tiledb docker
+	#docker build -f docker/Dockerfile.tiledb -t tdm/tiledb docker
+	docker build -f docker/Dockerfile.tiledb.new -t tdm/tiledb docker
 
 docker/docker_compose.yml: docker/docker-compose.yml-tmpl
 	sed -e "s^LOCAL_PATH^$${PWD}^"   \
@@ -14,6 +15,7 @@ docker/docker_compose.yml: docker/docker-compose.yml-tmpl
 
 run: docker/docker_compose.yml clean
 	docker-compose -f ./docker/docker-compose.yml up -d
+	cd docker && docker-compose logs tiledb
 
 clean:
 	docker-compose -f ./docker/docker-compose.yml down

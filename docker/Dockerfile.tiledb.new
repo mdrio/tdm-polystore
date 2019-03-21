@@ -89,13 +89,14 @@ RUN CLASSPATH=`/opt/hadoop/bin/hadoop classpath --glob` && \
 COPY core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
 
 RUN useradd -m jupyter
-
-USER jupyter
 RUN \
   mkdir -p /home/jupyter/notebooks && \
+  chmod a+r /opt/hadoop/etc/hadoop/core-site.xml && \
+  chown --recursive jupyter /home/jupyter && \
   find /home/jupyter -type d -print0 | xargs -0 chmod 777 && \
   find /home/jupyter -type f -print0 | xargs -0 chmod 666
 
+USER jupyter
 WORKDIR /home/jupyter/notebooks
 ENV HOME=/home/jupyter/
 

@@ -20,4 +20,7 @@ before_script: flake8 -v .
 script:
  - docker-compose -f .travis/docker-compose.yml up -d
  - DEBUG=true .travis/run_checks
+ - cd notebooks; jupyter nbconvert --to script *.ipynb
+ - for script in `ls *.py`; do python3 $script; done
  - docker-compose -f .travis/docker-compose.yml down
+
